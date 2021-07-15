@@ -2,6 +2,7 @@
  * MIT License
  *
  * Copyright (c) 2019 Alexey Edelev <semlanik@gmail.com>
+ * Copyright (c) 2021 Nikolai Lubiagov <lubagov@gmail.com>
  *
  * This file is part of QtProtobuf project https://git.semlanik.org/semlanik/qtprotobuf
  *
@@ -23,14 +24,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#pragma once //QGrpcStream
+#pragma once //QGrpcStreamBidirect
 
 #include <functional>
 #include <QMutex>
 #include <memory>
 
 #include "qabstractgrpcclient.h"
-#include "qgrpcasyncoperationbase_p.h"
+#include "qgrpcasyncoperationwritebase_p.h"
 
 #include "qtgrpcglobal.h"
 
@@ -40,9 +41,9 @@ class QAbstractGrpcClient;
 
 /*!
  * \ingroup QtGrpc
- * \brief The QGrpcStream class
+ * \brief The QGrpcStreamBidirect class
  */
-class Q_GRPC_EXPORT QGrpcStream final : public QGrpcAsyncOperationBase
+class Q_GRPC_EXPORT QGrpcStreamBidirect final : public QGrpcAsyncOperationWriteBase
 {
     Q_OBJECT
 public:
@@ -56,13 +57,6 @@ public:
      */
     QString method() const {
         return m_method;
-    }
-
-    /*!
-     * \brief Returns serialized arguments for this stream
-     */
-    QByteArray arg() const {
-        return m_arg;
     }
 
     /*!
@@ -87,23 +81,21 @@ signals:
 
 protected:
     //! \private
-    QGrpcStream(const QString &method, const QByteArray &arg,
-                const StreamHandler &handler, QAbstractGrpcClient *parent);
+    QGrpcStreamBidirect(const QString &method, const QByteArray &arg,
+                        const StreamHandler &handler, QAbstractGrpcClient *parent);
     //! \private
-    virtual ~QGrpcStream() = default;
+    virtual ~QGrpcStreamBidirect() = default;
 
     //! \private
     void addHandler(const StreamHandler &handler);
 
-    bool operator ==(const QGrpcStream &other) const {
-        return other.method() == this->method() &&
-                other.arg() == this->arg();
+    bool operator ==(const QGrpcStreamBidirect &other) const {
+        return other.method() == this->method();
     }
 
 private:
     friend class QAbstractGrpcClient;
-    QByteArray m_method;
-    QByteArray m_arg;
+    QString m_method;
     std::vector<StreamHandler> m_handlers;
 };
 

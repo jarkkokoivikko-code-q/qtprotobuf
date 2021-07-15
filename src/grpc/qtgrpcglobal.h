@@ -69,7 +69,9 @@
 namespace QtProtobuf {
 class QGrpcCallReply;
 class QGrpcStream;
+class QGrpcStreamBidirect;
 using QGrpcCallReplyShared = std::shared_ptr<QGrpcCallReply>;
 using QGrpcStreamShared = std::shared_ptr<QGrpcStream>;
+using QGrpcStreamBidirectShared = std::shared_ptr<QGrpcStreamBidirect>;
 using StreamHandler = std::function<void(const QByteArray&)>;
 }

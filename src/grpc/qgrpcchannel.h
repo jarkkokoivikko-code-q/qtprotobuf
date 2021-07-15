@@ -36,7 +36,7 @@
 namespace QtProtobuf {
 
 class QAbstractGrpcCredentials;
-struct QGrpcChannelPrivate;
+class QGrpcChannelPrivate;
 
 /*!
  * \ingroup QtGrpc
@@ -59,6 +59,7 @@ public:
     QGrpcStatus call(const QString &method, const QString &service, const QByteArray &args, QByteArray &ret) override;
     void call(const QString &method, const QString &service, const QByteArray &args, QtProtobuf::QGrpcCallReply *reply) override;
     void stream(QGrpcStream *stream, const QString &service, QAbstractGrpcClient *client) override;
+    void stream(QGrpcStreamBidirect *stream, const QString &service, QAbstractGrpcClient *client) override;
     std::shared_ptr<QAbstractProtobufSerializer> serializer() const override;
 
 private:

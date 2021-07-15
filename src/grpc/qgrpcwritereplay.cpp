@@ -2,6 +2,7 @@
  * MIT License
  *
  * Copyright (c) 2019 Alexey Edelev <semlanik@gmail.com>
+ * Copyright (c) 2021 Nikolai Lubiagov <lubagov@gmail.com>
  *
  * This file is part of QtProtobuf project https://git.semlanik.org/semlanik/qtprotobuf
  *
@@ -23,21 +24,40 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "qgrpccallreply.h"
+#include "qgrpcwritereplay.h"
 
-#include <QThread>
+namespace QtProtobuf {
 
-using namespace QtProtobuf;
-
-void QGrpcCallReply::abort()
+QGrpcWriteReplay::QGrpcWriteReplay(QObject *parent) :
+    QObject(parent),
+    m_status(WriteStatus::NotConnected)
 {
-    auto abortFunc = [this]() {
-        this->setData({});
-        this->emitError({QGrpcStatus::StatusCode::Aborted, u"Call aborted by user or timeout"_qs});
-    };
-    if (thread() != QThread::currentThread()) {
-        QMetaObject::invokeMethod(this, abortFunc, Qt::BlockingQueuedConnection);
-    } else {
-        abortFunc();
-    }
+
+}
+
+QGrpcWriteReplay::WriteStatus QGrpcWriteReplay::status() const
+{
+    return m_status;
+}
+
+bool QGrpcWriteReplay::ok() const
+{
+    return m_status == WriteStatus::OK;
+}
+
+void QGrpcWriteReplay::setStatus(WriteStatus status)
+{
+    m_status = status;
+}
+
+void QGrpcWriteReplay::emitFinished()
+{
+    emit finished();
+}
+
+void QtProtobuf::QGrpcWriteReplay::emitError()
+{
+    emit error();
+}
+
 }

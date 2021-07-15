@@ -47,6 +47,7 @@
 namespace QtProtobuf {
 
 class QGrpcAsyncOperationBase;
+class QGrpcAsyncOperationWriteBase;
 class QAbstractGrpcChannel;
 class QAbstractGrpcClientPrivate;
 
@@ -76,7 +77,7 @@ signals:
      * \param[out] code gRPC channel StatusCode
      * \param[out] errorText Error description from channel or from QGrpc
      */
-    void error(const QGrpcStatus &status) const;
+    void error(const QtProtobuf::QGrpcStatus &status);
 
 protected:
     QAbstractGrpcClient(const QString &service, QObject *parent = nullptr);
@@ -93,9 +94,9 @@ protected:
     QGrpcStatus call(const QString &method, const A &arg, const QPointer<R> &ret) {
         QGrpcStatus status{QGrpcStatus::Ok};
         if (ret.isNull()) {
-            static const QString errorString("Unable to call method: %1. Pointer to return data is null");
+            static const QString errorString(u"Unable to call method: %1. Pointer to return data is null"_qs);
             status = QGrpcStatus{QGrpcStatus::InvalidArgument, errorString.arg(method)};
-            error(status);
+            emit error(status);
             qProtoCritical() << errorString.arg(method);
             return status;
         }
@@ -109,7 +110,7 @@ protected:
                 status = tryDeserialize(*ret, retData);
             }
         } else {
-            status = QGrpcStatus({QGrpcStatus::Unknown, QLatin1String("Serializing failed. Serializer is not ready")});
+            status = QGrpcStatus({QGrpcStatus::Unknown, u"Serializing failed. Serializer is not ready"_qs});
         }
         return status;
     }
@@ -150,6 +151,17 @@ protected:
 
     /*!
      * \private
+     * \brief Streams to message notifications from bidirect-stream
+     * \param[in] method Name of the method to be called
+     * \param[out] signal Callback with return-message as input parameter that will be called each time message
+     *             update recevied from server-stream and write method called each message to send from client-stream
+     */
+    QGrpcStreamBidirectShared stream(const QString &method){
+        return streamBidirect(method, QByteArray(), QtProtobuf::StreamHandler{});
+    }
+
+    /*!
+     * \private
      * \brief Streams to message notifications from server-stream with given message argument \a arg
      * \param[in] method Name of the method to be called
      * \param[in] arg Protobuf message argument for \p method
@@ -162,7 +174,7 @@ protected:
     QGrpcStreamShared stream(const QString &method, const A &arg, const QPointer<R> &ret) {
         if (ret.isNull()) {
             static const QString nullPointerError("Unable to stream method: %1. Pointer to return data is null");
-            error({QGrpcStatus::InvalidArgument, nullPointerError.arg(method)});
+            emit error({QGrpcStatus::InvalidArgument, nullPointerError.arg(method)});
             qProtoCritical() << nullPointerError.arg(method);
             return nullptr;
         }
@@ -175,8 +187,8 @@ protected:
             if (!ret.isNull()) {
                 tryDeserialize(*ret, data);
             } else {
-                static const QLatin1String nullPointerError("Pointer to return data is null while stream update received");
-                error({QGrpcStatus::InvalidArgument, nullPointerError});
+                static const QString nullPointerError(u"Pointer to return data is null while stream update received"_qs);
+                emit error({QGrpcStatus::InvalidArgument, nullPointerError});
                 qProtoCritical() << nullPointerError;
             }
         });
@@ -189,6 +201,7 @@ protected:
     void cancel(const QString &method);
 
     friend class QGrpcAsyncOperationBase;
+    friend class QGrpcAsyncOperationWriteBase;
 private:
     //!\private
     QGrpcStatus call(const QString &method, const QByteArray &arg, QByteArray &ret);
@@ -198,6 +211,9 @@ private:
 
     //!\private
     QGrpcStreamShared stream(const QString &method, const QByteArray &arg, const QtProtobuf::StreamHandler &handler = {});
+
+    //!\private
+    QGrpcStreamBidirectShared streamBidirect(const QString &method, const QByteArray &arg, const QtProtobuf::StreamHandler &handler = {});
 
     /*!
      * \private
@@ -211,22 +227,22 @@ private:
             try {
                 ret.deserialize(_serializer.get(), retData);
             } catch (std::invalid_argument &) {
-                static const QLatin1String invalidArgumentErrorMessage("Response deserialization failed invalid field found");
+                static const QString invalidArgumentErrorMessage(u"Response deserialization failed invalid field found"_qs);
                 status = {QGrpcStatus::InvalidArgument, invalidArgumentErrorMessage};
-                error(status);
+                emit error(status);
                 qProtoCritical() << invalidArgumentErrorMessage;
             } catch (std::out_of_range &) {
-                static const QLatin1String outOfRangeErrorMessage("Invalid size of received buffer");
+                static const QString outOfRangeErrorMessage(u"Invalid size of received buffer"_qs);
                 status = {QGrpcStatus::OutOfRange, outOfRangeErrorMessage};
-                error(status);
+                emit error(status);
                 qProtoCritical() << outOfRangeErrorMessage;
             } catch (...) {
-                status = {QGrpcStatus::Internal, QLatin1String("Unknown exception caught during deserialization")};
-                error(status);
+                status = {QGrpcStatus::Internal, u"Unknown exception caught during deserialization"_qs};
+                emit error(status);
             }
         } else {
-            status = {QGrpcStatus::Unknown, QLatin1String("Deserializing failed. Serializer is not ready")};
-            error(status);
+            status = {QGrpcStatus::Unknown, u"Deserializing failed. Serializer is not ready"_qs};
+            emit error(status);
         }
         return status;
     }
@@ -238,7 +254,7 @@ private:
         QGrpcStatus status{QGrpcStatus::Ok};
         auto _serializer = serializer();
         if (_serializer == nullptr) {
-            error({QGrpcStatus::Unknown, QLatin1String("Serializing failed. Serializer is not ready")});
+            emit error({QGrpcStatus::Unknown, u"Serializing failed. Serializer is not ready"_qs});
             return QByteArray();
         }
         ok = true;

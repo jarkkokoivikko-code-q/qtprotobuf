@@ -381,6 +381,7 @@ const char *Templates::QmlRegisterEnumTypeTemplate = "qmlRegisterUncreatableType
 const char *Templates::ClientMethodSignalDeclarationTemplate = "Q_SIGNAL void $method_name$Updated(const $return_type$ &);\n";
 const char *Templates::ClientMethodServerStreamDeclarationTemplate = "QtProtobuf::QGrpcStreamShared stream$method_name_upper$(const $param_type$ &$param_name$);\n";
 const char *Templates::ClientMethodServerStream2DeclarationTemplate = "QtProtobuf::QGrpcStreamShared stream$method_name_upper$(const $param_type$ &$param_name$, const QPointer<$return_type$> &$return_name$);\n";
+const char *Templates::ClientMethodServerStream2DeclarationTemplate2 = "QtProtobuf::QGrpcStreamBidirectShared stream$method_name_upper$();\n";
 const char *Templates::ClientMethodServerStreamQmlDeclarationTemplate = "Q_INVOKABLE QtProtobuf::QGrpcStreamShared qmlStream$method_name_upper$_p($param_type$ *$param_name$, $return_type$ *$return_name$);\n";
 
 const char *Templates::ClientMethodServerStreamDefinitionTemplate = "QtProtobuf::QGrpcStreamShared $classname$::stream$method_name_upper$(const $param_type$ &$param_name$)\n"
@@ -395,6 +396,10 @@ const char *Templates::ClientMethodServerStreamQmlDefinitionTemplate = "QtProtob
                                                                        "{\n"
                                                                        "    return stream(\"$method_name$\", *$param_name$, QPointer<$return_type$>($return_name$));\n"
                                                                        "}\n";
+const char *Templates::ClientMethodServerStream2DefinitionTemplate2 = "QtProtobuf::QGrpcStreamBidirectShared $classname$::stream$method_name_upper$()\n"
+                                                                     "{\n"
+                                                                     "    return stream(\"$method_name$\");\n"
+                                                                     "}\n";
 
 const char *Templates::ListSuffix = "Repeated";
 

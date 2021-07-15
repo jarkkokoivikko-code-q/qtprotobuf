@@ -58,6 +58,7 @@ public:
     QGrpcStatus call(const QString &method, const QString &service, const QByteArray &args, QByteArray &ret) override;
     void call(const QString &method, const QString &service, const QByteArray &args, QtProtobuf::QGrpcCallReply *reply) override;
     void stream(QGrpcStream *stream, const QString &service, QAbstractGrpcClient *client) override;
+    void stream(QGrpcStreamBidirect *stream, const QString &service, QAbstractGrpcClient *client) override;
     std::shared_ptr<QAbstractProtobufSerializer> serializer() const override;
 private:
     Q_DISABLE_COPY_MOVE(QGrpcHttp2Channel)

@@ -212,6 +212,7 @@ bool SingleFileGenerator::GenerateServices(const ::google::protobuf::FileDescrip
     externalIncludes.insert("QAbstractGrpcClient");
     externalIncludes.insert("QGrpcCallReply");
     externalIncludes.insert("QGrpcStream");
+    externalIncludes.insert("QGrpcStreamBidirect");
 
     if (file->message_type_count() > 0) {
         internalIncludes.insert(basename + Templates::ProtoFileSuffix);

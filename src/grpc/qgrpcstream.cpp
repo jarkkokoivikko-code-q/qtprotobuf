@@ -31,7 +31,7 @@
 using namespace QtProtobuf;
 
 QGrpcStream::QGrpcStream(const QString &method, const QByteArray &arg, const StreamHandler &handler, QAbstractGrpcClient *parent) : QGrpcAsyncOperationBase(parent)
-  , m_method(method)
+  , m_method(method.toLatin1())
   , m_arg(arg)
 {
     if (handler) {
@@ -51,6 +51,6 @@ void QGrpcStream::abort()
     if (thread() != QThread::currentThread()) {
         QMetaObject::invokeMethod(this, &QGrpcStream::finished, Qt::BlockingQueuedConnection);
     } else {
-        finished();
+        emit finished();
     }
 }

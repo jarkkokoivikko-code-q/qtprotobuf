@@ -1,8 +1,10 @@
 qt_protobuf_internal_add_library(Grpc
     SOURCES
         qgrpcasyncoperationbase.cpp
+        qgrpcasyncoperationwritebase.cpp
         qgrpccallreply.cpp
         qgrpcstream.cpp
+        qgrpcstreambidirect.cpp
         qgrpcstatus.cpp
         qabstractgrpcchannel.cpp
         qgrpchttp2channel.cpp
@@ -11,10 +13,13 @@ qt_protobuf_internal_add_library(Grpc
         qgrpcsslcredentials.cpp
         qgrpcinsecurecredentials.cpp
         qgrpcuserpasswordcredentials.cpp
+        qgrpcwritereplay.cpp
     PUBLIC_HEADER
         qgrpcasyncoperationbase_p.h
+        qgrpcasyncoperationwritebase_p.h
         qgrpccallreply.h
         qgrpcstream.h
+        qgrpcstreambidirect.h
         qgrpcstatus.h
         qabstractgrpcchannel.h
         qgrpchttp2channel.h
@@ -25,6 +30,7 @@ qt_protobuf_internal_add_library(Grpc
         qgrpcinsecurecredentials.h
         qgrpcuserpasswordcredentials.h
         qtgrpcglobal.h
+        qgrpcwritereplay.h
     PUBLIC_LIBRARIES
         ${QT_PROTOBUF_NAMESPACE}::Protobuf
         ${QT_VERSIONED_PREFIX}::Core

@@ -38,6 +38,7 @@
 
 #include "qgrpccallreply.h"
 #include "qgrpcstream.h"
+#include "qgrpcstreambidirect.h"
 #include "qabstractgrpcclient.h"
 #include "qgrpccredentials.h"
 #include "qprotobufserializerregistry_p.h"
@@ -248,10 +249,10 @@ void QGrpcHttp2Channel::call(const QString &method, const QString &service, cons
         qProtoDebug() << "RECV: " << data;
         if (QGrpcStatus::StatusCode::Ok == grpcStatus) {
             reply->setData(data);
-            reply->finished();
+            reply->emitFinished();
         } else {
             reply->setData({});
-            reply->error({grpcStatus, QString::fromUtf8(networkReply->rawHeader(GrpcStatusMessage))});
+            reply->emitError({grpcStatus, QString::fromUtf8(networkReply->rawHeader(GrpcStatusMessage))});
         }
         networkReply->deleteLater();
     });
@@ -358,14 +359,14 @@ void QGrpcHttp2Channel::stream(QGrpcStream *grpcStream, const QString &service, 
             QGrpcStatus::StatusCode grpcStatus;
             QGrpcHttp2ChannelPrivate::processReply(networkReply, grpcStatus);
             if (grpcStatus != QGrpcStatus::StatusCode::Ok) {
-                grpcStream->error(QGrpcStatus{grpcStatus, QString::fromUtf8(networkReply->rawHeader(GrpcStatusMessage))});
+                grpcStream->emitError(QGrpcStatus{grpcStatus, QString::fromUtf8(networkReply->rawHeader(GrpcStatusMessage))});
             } else {
-                grpcStream->finished();
+                grpcStream->emitFinished();
             }
             break;
         }
         default:
-            grpcStream->error(QGrpcStatus{StatusCodeMap.at(networkError), QString("%1 call %2 stream failed: %3").arg(service).arg(grpcStream->method()).arg(errorString)});
+            grpcStream->emitError(QGrpcStatus{StatusCodeMap.at(networkError), QString("%1 call %2 stream failed: %3").arg(service).arg(grpcStream->method()).arg(errorString)});
             break;
         }
     });
@@ -383,6 +384,11 @@ void QGrpcHttp2Channel::stream(QGrpcStream *grpcStream, const QString &service, 
         QGrpcHttp2ChannelPrivate::abortNetworkReply(networkReply);
         networkReply->deleteLater();
     });
+}
+
+void QGrpcHttp2Channel::stream(QGrpcStreamBidirect *stream, const QString &service, QAbstractGrpcClient *client)
+{
+    Q_ASSERT_X(false, "stream", "Not implemented in QtNetwork channel");
 }
 
 std::shared_ptr<QAbstractProtobufSerializer> QGrpcHttp2Channel::serializer() const

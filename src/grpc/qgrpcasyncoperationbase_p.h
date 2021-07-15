@@ -46,6 +46,8 @@ namespace QtProtobuf {
 class Q_GRPC_EXPORT QGrpcAsyncOperationBase : public QObject
 {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(QGrpcAsyncOperationBase)
+
 public:
     /*!
      * \brief Reads message from raw byte array stored in QGrpcCallReply
@@ -67,11 +69,7 @@ public:
      *        reply
      * \param data Raw data received from channel
      */
-    void setData(const QByteArray &data)
-    {
-        QMutexLocker locker(&m_asyncLock);
-        m_data = data;
-    }
+    void setData(const QByteArray &data);
 
     virtual void abort() = 0;
 
@@ -90,17 +88,22 @@ signals:
 
 protected:
     //! \private
-    QGrpcAsyncOperationBase(QAbstractGrpcClient *parent) : QObject(parent) {}
+    QGrpcAsyncOperationBase(QAbstractGrpcClient *parent);
     //! \private
     virtual ~QGrpcAsyncOperationBase();
 
+    void emitFinished();
+    void emitError(const QtProtobuf::QGrpcStatus &status);
+
 private:
     QGrpcAsyncOperationBase();
-    Q_DISABLE_COPY_MOVE(QGrpcAsyncOperationBase)
 
     friend class QAbstractGrpcClient;
+    friend class QGrpcChannelPrivate;
+    friend class QGrpcHttp2Channel;
 
     QByteArray m_data;
+protected:
     QMutex m_asyncLock;
 };
 

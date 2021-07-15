@@ -27,6 +27,7 @@
 
 #include "qgrpccallreply.h"
 #include "qgrpcstream.h"
+#include "qgrpcstreambidirect.h"
 #include <QThread>
 
 namespace QtProtobuf {

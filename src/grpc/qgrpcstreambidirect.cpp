@@ -2,6 +2,7 @@
  * MIT License
  *
  * Copyright (c) 2019 Alexey Edelev <semlanik@gmail.com>
+ * Copyright (c) 2021 Nikolai Lubiagov <lubagov@gmail.com>
  *
  * This file is part of QtProtobuf project https://git.semlanik.org/semlanik/qtprotobuf
  *
@@ -23,21 +24,35 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "qgrpccallreply.h"
+#include "qgrpcstreambidirect.h"
 
+#include <qtprotobuflogging.h>
 #include <QThread>
 
 using namespace QtProtobuf;
 
-void QGrpcCallReply::abort()
+QGrpcStreamBidirect::QGrpcStreamBidirect(const QString &method, const QByteArray &arg,
+                                         const StreamHandler &handler, QAbstractGrpcClient *parent) :
+    QGrpcAsyncOperationWriteBase(parent),
+    m_method(method.toLatin1())
 {
-    auto abortFunc = [this]() {
-        this->setData({});
-        this->emitError({QGrpcStatus::StatusCode::Aborted, u"Call aborted by user or timeout"_qs});
-    };
+    if (handler) {
+        m_handlers.push_back(handler);
+    }
+}
+
+void QGrpcStreamBidirect::addHandler(const StreamHandler &handler)
+{
+    if (handler) {
+        m_handlers.push_back(handler);
+    }
+}
+
+void QGrpcStreamBidirect::abort()
+{
     if (thread() != QThread::currentThread()) {
-        QMetaObject::invokeMethod(this, abortFunc, Qt::BlockingQueuedConnection);
+        QMetaObject::invokeMethod(this, &QGrpcStreamBidirect::finished, Qt::BlockingQueuedConnection);
     } else {
-        abortFunc();
+        emit finished();
     }
 }

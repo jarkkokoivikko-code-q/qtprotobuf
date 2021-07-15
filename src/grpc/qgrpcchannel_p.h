@@ -2,6 +2,7 @@
  * MIT License
  *
  * Copyright (c) 2019 Giulio Girardi <giulio.girardi@protechgroup.it>
+ * Copyright (c) 2021 Nikolai Lubiagov <lubagov@gmail.com>
  *
  * This file is part of QtProtobuf project https://git.semlanik.org/semlanik/qtprotobuf
  *
@@ -26,82 +27,171 @@
 #include <QEventLoop>
 #include <QThread>
 
+#include <QQueue>
 #include <grpcpp/channel.h>
 #include <grpcpp/impl/codegen/byte_buffer.h>
 #include <grpcpp/impl/codegen/client_context.h>
-#include <grpcpp/impl/codegen/sync_stream.h>
+#include <grpcpp/impl/codegen/async_stream.h>
+
+#include <grpcpp/impl/codegen/completion_queue.h>
 #include <grpcpp/security/credentials.h>
 
-#include "qabstractgrpccredentials.h"
 #include "qgrpccallreply.h"
 #include "qgrpcstream.h"
+#include "qgrpcstreambidirect.h"
 #include "qabstractgrpcclient.h"
-#include "qgrpccredentials.h"
-#include "qprotobufserializerregistry_p.h"
-#include "qtprotobuflogging.h"
 
 namespace QtProtobuf {
 
+struct FunctionCall {
+    QObject* m_parent;
+    std::function<void(bool)> m_method;
+
+    void callMethod(bool arg) {
+        QMetaObject::invokeMethod(m_parent, [this, arg](){m_method(arg);}, Qt::QueuedConnection);
+    }
+};
+
 //! \private
-class QGrpcChannelStream : public QObject {
+class QGrpcChannelBaseCall : public QObject {
+    Q_OBJECT
+public:
+    //! \private
+    typedef enum ReaderState {
+        FIRST_CALL = 0,
+        PROCESSING,
+        ENDED
+    } ReaderState;
+
+    QGrpcStatus m_status;
+    QGrpcChannelBaseCall(grpc::Channel *channel, grpc::CompletionQueue *queue,
+                         const QString &method, QObject *parent = nullptr) :
+        QObject(parent),
+        m_readerState(FIRST_CALL),
+        m_channel(channel),
+        m_queue(queue),
+        m_method(method.toLatin1())
+    {}
+
+protected:
+    ReaderState m_readerState;
+    grpc::Status m_grpc_status;
+
+    grpc::ClientContext m_context;
+    grpc::ByteBuffer response;
+
+    grpc::Channel *m_channel;
+    grpc::CompletionQueue* m_queue;
+    QByteArray m_method;
+};
+
+//! \private
+class QGrpcChannelStream : public QGrpcChannelBaseCall {
     //! \private
     Q_OBJECT;
-
 public:
-    QGrpcChannelStream(grpc::Channel *channel, const QString &method, const QByteArray &data, QObject *parent = nullptr);
+    QGrpcChannelStream(grpc::Channel *channel, grpc::CompletionQueue* queue, const QString &method,
+                       const QByteArray &argument, QObject *parent = nullptr);
     ~QGrpcChannelStream();
 
+    void startReader();
     void cancel();
-    void start();
+    void newData(bool ok);
+    void finishRead(bool ok);
 
 signals:
     void dataReady(const QByteArray &data);
     void finished();
 
+private:
+    QByteArray m_argument;
+    grpc::ClientAsyncReader<grpc::ByteBuffer> *m_reader;
+    FunctionCall m_finishRead;
+    FunctionCall m_newData;
+};
+
+struct QGrpcChannelWriteData {
+    QByteArray data;
+    QGrpcWriteReplayShared replay;
+    bool done;
+};
+
+class QGrpcChannelStreamBidirect : public QGrpcChannelBaseCall {
+    //! \private
+    Q_OBJECT
 public:
-    QGrpcStatus status;
+    QGrpcChannelStreamBidirect(grpc::Channel *channel, grpc::CompletionQueue* queue, const QString &method,
+                               QObject *parent = nullptr);
+    ~QGrpcChannelStreamBidirect();
+
+    void startReader();
+    void cancel();
+    void writeDone(const QGrpcWriteReplayShared& replay);
+    void appendToSend(const QByteArray& data, const QGrpcWriteReplayShared& replay);
+    void newData(bool ok);
+    void finishRead(bool ok);
+    void finishWrite(bool ok);
+
+signals:
+    void dataReady(const QByteArray &data);
+    void finished();
 
 private:
-    QThread *thread;
-    grpc::ClientContext context;
-    grpc::ClientReader<grpc::ByteBuffer> *reader = nullptr;
+    grpc::ClientAsyncReaderWriter<grpc::ByteBuffer,grpc::ByteBuffer> *m_reader;
+    QQueue<QGrpcChannelWriteData> m_sendQueue;
+    bool m_inProcess;
+    QGrpcWriteReplayShared m_currentWriteReplay;
+
+    FunctionCall m_finishWrite;
+    FunctionCall m_finishRead;
+    FunctionCall m_newData;
 };
 
 //! \private
-class QGrpcChannelCall : public QObject {
+class QGrpcChannelCall : public QGrpcChannelBaseCall {
     //! \private
-    Q_OBJECT;
-
+    Q_OBJECT
 public:
-    QGrpcChannelCall(grpc::Channel *channel, const QString &method, const QByteArray &data, QObject *parent = nullptr);
+    QByteArray responseParsed;
+    QGrpcChannelCall(grpc::Channel *channel, grpc::CompletionQueue* queue, const QString &method,
+                     const QByteArray &data, QObject *parent = nullptr);
     ~QGrpcChannelCall();
 
+    void startReader();
     void cancel();
-    void start();
+    void newData(bool ok);
+    void finishRead(bool ok);
 
 signals:
     void finished();
 
-public:
-    QGrpcStatus status;
-    QByteArray response;
-
 private:
-    QThread *thread;
-    grpc::ClientContext context;
+    QByteArray m_argument;
+    grpc::ClientAsyncReader<grpc::ByteBuffer> *m_reader;
+    FunctionCall m_newData;
+    FunctionCall m_finishRead;
 };
 
 //! \private
-struct QGrpcChannelPrivate {
+class QGrpcChannelPrivate: public QObject {
+    Q_OBJECT
     //! \private
-    std::shared_ptr<grpc::Channel> m_channel;
-
+public:
     QGrpcChannelPrivate(const QUrl &url, std::shared_ptr<grpc::ChannelCredentials> credentials);
     ~QGrpcChannelPrivate();
 
     void call(const QString &method, const QString &service, const QByteArray &args, QGrpcCallReply *reply);
     QGrpcStatus call(const QString &method, const QString &service, const QByteArray &args, QByteArray &ret);
     void stream(QGrpcStream *stream, const QString &service, QAbstractGrpcClient *client);
+    void stream(QGrpcStreamBidirect *stream, const QString &service, QAbstractGrpcClient *client);
+
+signals:
+    void finished();
+
+private:
+    QThread* m_workThread;
+    std::shared_ptr<grpc::Channel> m_channel;
+    grpc::CompletionQueue m_queue;
 };
 
 };

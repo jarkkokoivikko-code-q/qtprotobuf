@@ -31,7 +31,6 @@
 #include <memory>
 
 #include "qgrpcstatus.h"
-#include "qgrpccredentials.h"
 #include "qtgrpcglobal.h"
 
 class QThread;
@@ -40,6 +39,7 @@ namespace QtProtobuf {
 
 class QAbstractGrpcClient;
 class QAbstractProtobufSerializer;
+class QGrpcStreamBidirect;
 struct QAbstractGrpcChannelPrivate;
 /*!
  * \ingroup QtGrpc
@@ -84,6 +84,16 @@ public:
      * \param[in] handler callback that will be called when message recevied from the server-stream
      */
     virtual void stream(QGrpcStream *stream, const QString &service, QAbstractGrpcClient *client) = 0;
+
+    /*!
+     * \brief Streams to server-side stream to receive and send updates for given \p method.
+     *        \note This method should not be called directly.
+     * \param[in] method remote method is called
+     * \param[in] service service identified in URL path format
+     * \param[in] args serialized argument message
+     * \param[in] handler callback that will be called when message recevied from the server-stream
+     */
+    virtual void stream(QGrpcStreamBidirect *stream, const QString &service, QAbstractGrpcClient *client) = 0;
 
     virtual std::shared_ptr<QAbstractProtobufSerializer> serializer() const = 0;
 

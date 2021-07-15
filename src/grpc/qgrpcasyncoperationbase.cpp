@@ -29,10 +29,32 @@
 
 using namespace QtProtobuf;
 
+QtProtobuf::QGrpcAsyncOperationBase::QGrpcAsyncOperationBase(QAbstractGrpcClient *parent) :
+    QObject(parent)
+{
+
+}
+
 QGrpcAsyncOperationBase::~QGrpcAsyncOperationBase()
 {
     qProtoDebug() << "Trying ~QGrpcAsyncOperationBase" << this;
     QMutexLocker locker(&m_asyncLock);
     qProtoDebug() << "~QGrpcAsyncOperationBase" << this;
     (void)locker;
+}
+
+void QGrpcAsyncOperationBase::setData(const QByteArray &data)
+{
+    QMutexLocker locker(&m_asyncLock);
+    m_data = data;
+}
+
+void QGrpcAsyncOperationBase::emitFinished()
+{
+    emit finished();
+}
+
+void QGrpcAsyncOperationBase::emitError(const QGrpcStatus &status)
+{
+    emit error(status);
 }
