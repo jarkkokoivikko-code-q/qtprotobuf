@@ -187,7 +187,7 @@ function(qt_protobuf_internal_add_library target)
     )
 
     target_compile_features(${target}
-        PUBLIC cxx_std_14
+        PUBLIC cxx_std_17
             cxx_auto_type
             cxx_decltype
             cxx_final
