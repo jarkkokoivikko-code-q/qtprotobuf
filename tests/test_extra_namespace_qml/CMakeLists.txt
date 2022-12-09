@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC OFF)
 file(GLOB SOURCES main.cpp)
 file(GLOB QML_FILES qml/tst_extra_namespace.qml)
 
-qt5_wrap_cpp(MOC_SOURCES test.h)
+qt_wrap_cpp(MOC_SOURCES test.h)
 
 add_executable(${TARGET} ${MOC_SOURCES} ${SOURCES} ${QML_FILES})
 target_link_libraries(${TARGET} PRIVATE ${QT_VERSIONED_PREFIX}::Core ${QT_VERSIONED_PREFIX}::Qml ${QT_VERSIONED_PREFIX}::Network ${QT_VERSIONED_PREFIX}::Quick ${QT_VERSIONED_PREFIX}::Test ${QT_VERSIONED_PREFIX}::QuickTest ${QT_PROTOBUF_NAMESPACE}::Protobuf)

@@ -145,7 +145,7 @@ function(qtprotobuf_generate)
         endif()
     endforeach()
 
-    qt5_wrap_cpp(moc_sources ${generated_headers})
+    qt_wrap_cpp(moc_sources ${generated_headers})
 
     get_property(num_deps GLOBAL PROPERTY ${generated_target_name}_deps_num)
     if(NOT num_deps)

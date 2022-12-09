@@ -4,7 +4,7 @@ set(CMAKE_AUTOMOC OFF)
 
 file(GLOB QML_FILES qml/tst_grpc.qml)
 
-qt5_wrap_cpp(MOC_SOURCES test.h)
+qt_wrap_cpp(MOC_SOURCES test.h)
 
 add_executable(qtgrpc_qml_test_http2 ${MOC_SOURCES} http2.cpp ${QML_FILES})
 target_link_libraries(qtgrpc_qml_test_http2
