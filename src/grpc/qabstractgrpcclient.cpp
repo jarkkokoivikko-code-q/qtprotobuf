@@ -116,7 +116,7 @@ QGrpcCallReplyShared QAbstractGrpcClient::call(const QString &method, const QByt
             reply.reset();
         });
 
-        *finishedConnection = connect(reply.get(), &QGrpcCallReply::finished, [reply, errorConnection, finishedConnection]() mutable {
+        *finishedConnection = connect(reply.get(), &QGrpcCallReply::finished, [this, reply, errorConnection, finishedConnection]() mutable {
             QObject::disconnect(*finishedConnection);
             QObject::disconnect(*errorConnection);
             reply.reset();
