@@ -131,9 +131,17 @@ function(qtprotobuf_generate)
 
     list(TRANSFORM generated_files PREPEND "${out_dir}/")
 
+    set(additional_source_files_properties "")
+    if(MINGW)
+        set(additional_source_files_properties "COMPILE_OPTIONS" "-Wa,-mbig-obj")
+    elseif(MSVC)
+        set(additional_source_files_properties "COMPILE_OPTIONS" "/bigobj")
+    endif()
+
     set_source_files_properties(${generated_files} PROPERTIES
         GENERATED TRUE
         SKIP_AUTOGEN ON
+        ${additional_source_files_properties}
     )
 
     # Filter generated headers
