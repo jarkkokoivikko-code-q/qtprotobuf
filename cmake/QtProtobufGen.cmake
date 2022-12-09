@@ -28,7 +28,7 @@ function(qtprotobuf_generate)
     set(generation_options "")
     set(extra_pre_parse_options "")
 
-    set(generation_type "SIGNLE")
+    set(generation_type "SINGLE")
     if(arg_MULTI)
         set(generation_type "MULTI")
         list(APPEND extra_pre_parse_options "-DMULTI=TRUE")
