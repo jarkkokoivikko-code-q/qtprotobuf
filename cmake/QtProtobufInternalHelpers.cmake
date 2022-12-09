@@ -185,6 +185,12 @@ function(qt_protobuf_internal_add_library target)
             VERSION ${PROJECT_VERSION}
             OUTPUT_NAME ${QT_VERSIONED_PREFIX}${target}
     )
+    if(MSVC)
+        set_target_properties(${target}
+            PROPERTIES
+                OUTPUT_NAME_DEBUG ${QT_VERSIONED_PREFIX}${target}d
+        )
+    endif()
 
     target_compile_features(${target}
         PUBLIC cxx_std_17
