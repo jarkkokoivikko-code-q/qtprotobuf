@@ -51,8 +51,9 @@ qt_protobuf_internal_add_library(Protobuf
         qprotobufserializationplugininterface.h
         qprotobuflazymessagepointer.h
     PUBLIC_LIBRARIES
-        Qt5::Core
-        Qt5::Qml
+        ${QT_VERSIONED_PREFIX}::Core
+        ${QT_VERSIONED_PREFIX}::Qml
+        ${QT_VERSIONED_PREFIX}::QmlPrivate
     PUBLIC_DEFINES
         QT_PROTOBUF_PLUGIN_PATH="${QT_INSTALL_PLUGINS}/protobuf"
 )
@@ -71,6 +72,6 @@ endif()
 
 qt_protobuf_internal_generate_pri(Protobuf)
 
-if(TARGET Qt5::Quick)
+if(TARGET ${QT_VERSIONED_PREFIX}::Quick)
     add_subdirectory("quick")
 endif()

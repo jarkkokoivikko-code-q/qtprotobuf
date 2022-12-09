@@ -11,9 +11,9 @@ qt_protobuf_internal_add_library(ProtobufQtTypes
     PUBLIC_INCLUDE_DIRECTORIES
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>"
     PUBLIC_LIBRARIES
-        Qt5::Core
-        Qt5::Gui
-        Qt5::Qml
+        ${QT_VERSIONED_PREFIX}::Core
+        ${QT_VERSIONED_PREFIX}::Gui
+        ${QT_VERSIONED_PREFIX}::Qml
         ${QT_PROTOBUF_NAMESPACE}::Protobuf
 )
 
@@ -21,7 +21,7 @@ qt_protobuf_internal_add_library(ProtobufQtTypes
 file(GLOB PROTO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/QtProtobuf/Qt*.proto)
 
 set(qml_enabled "")
-if(TARGET Qt5::Qml)
+if(TARGET ${QT_VERSIONED_PREFIX}::Qml)
     set(qml_enabled QML)
 endif()
 

@@ -6,8 +6,8 @@ qt_protobuf_internal_add_library(ProtobufWellKnownTypes
     PUBLIC_INCLUDE_DIRECTORIES
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>"
     PUBLIC_LIBRARIES
-        Qt5::Core
-        Qt5::Qml
+        ${QT_VERSIONED_PREFIX}::Core
+        ${QT_VERSIONED_PREFIX}::Qml
         ${QT_PROTOBUF_NAMESPACE}::Protobuf
 )
 
@@ -17,7 +17,7 @@ function(add_wellknowntype type_name)
     )
 
     set(qml_enabled "")
-    if(TARGET Qt5::Qml)
+    if(TARGET ${QT_VERSIONED_PREFIX}::Qml)
         set(qml_enabled QML)
     endif()
     foreach(dir ${lookup_dirs})

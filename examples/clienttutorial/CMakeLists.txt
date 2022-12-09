@@ -8,8 +8,8 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt5 COMPONENTS Core Quick REQUIRED)
-set(CMAKE_POSITION_INDEPENDENT_CODE ${Qt5_POSITION_INDEPENDENT_CODE})
+find_package(${QT_VERSIONED_PREFIX} COMPONENTS Core Quick REQUIRED)
+set(CMAKE_POSITION_INDEPENDENT_CODE ${${QT_VERSIONED_PREFIX}_POSITION_INDEPENDENT_CODE})
 set(QT_PROTOBUF_NAMESPACE QtProtobuf)
 if(NOT TARGET ${QT_PROTOBUF_NAMESPACE}::qtprotobufgen)
     find_package(${QT_PROTOBUF_NAMESPACE} COMPONENTS ProtobufGenerator CONFIG REQUIRED)
@@ -33,7 +33,7 @@ if(QT_PROTOBUF_STATIC)
    add_definitions(-DQT_PROTOBUF_STATIC)# add_definitions is used because old cmake versions
                                         # compatibility
 endif()
-target_link_libraries(clienttutorial PRIVATE Qt5::Core
-                                             Qt5::Quick
+target_link_libraries(clienttutorial PRIVATE ${QT_VERSIONED_PREFIX}::Core
+                                             ${QT_VERSIONED_PREFIX}::Quick
                                              ${QT_PROTOBUF_NAMESPACE}::Grpc
                                              ${QT_PROTOBUF_NAMESPACE}::Protobuf)

@@ -27,8 +27,8 @@ qt_protobuf_internal_add_library(Grpc
         qtgrpcglobal.h
     PUBLIC_LIBRARIES
         ${QT_PROTOBUF_NAMESPACE}::Protobuf
-        Qt5::Core
-        Qt5::Network
+        ${QT_VERSIONED_PREFIX}::Core
+        ${QT_VERSIONED_PREFIX}::Network
 )
 
 if(QT_PROTOBUF_NATIVE_GRPC_CHANNEL)
@@ -51,6 +51,6 @@ endif()
 
 qt_protobuf_internal_generate_pri(Grpc)
 
-if(TARGET Qt5::Quick)
+if(TARGET ${QT_VERSIONED_PREFIX}::Quick)
     add_subdirectory("quick")
 endif()

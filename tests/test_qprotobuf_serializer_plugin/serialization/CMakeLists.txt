@@ -8,7 +8,7 @@ set(TARGET_BINDIR ${CMAKE_INSTALL_BINDIR})
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt5 COMPONENTS Core REQUIRED)
+find_package(${QT_VERSIONED_PREFIX} COMPONENTS Core REQUIRED)
 
 file(GLOB SOURCES
     qtserializationplugin.cpp
@@ -20,7 +20,7 @@ file(GLOB HEADERS
     qtserialization_global.h)
 
 add_library(${TARGET} SHARED ${SOURCES})
-target_link_libraries(${TARGET} PRIVATE Qt5::Core Qt5::Qml ${QT_PROTOBUF_NAMESPACE}::Protobuf)
+target_link_libraries(${TARGET} PRIVATE ${QT_VERSIONED_PREFIX}::Core ${QT_VERSIONED_PREFIX}::Qml ${QT_PROTOBUF_NAMESPACE}::Protobuf)
 target_compile_definitions(${TARGET} PRIVATE SERIALIZATION_LIB)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/serializeinfo.json" "${CMAKE_CURRENT_BINARY_DIR}/serializeinfo.json" COPYONLY)
