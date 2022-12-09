@@ -180,6 +180,7 @@ function(qtprotobuf_generate)
 
     if(NOT TARGET ${generated_target_name})
         add_library(${generated_target_name} OBJECT ${generated_files} ${moc_sources})
+        target_link_libraries(${generated_target_name} PRIVATE ${QT_VERSIONED_PREFIX}::Core)
     else()
         target_sources(${generated_target_name} PRIVATE ${generated_files} ${moc_sources})
     endif()
