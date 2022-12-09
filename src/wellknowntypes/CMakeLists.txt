@@ -1,3 +1,5 @@
+set(wellknowntypes_install_includedir ${CMAKE_INSTALL_INCLUDEDIR}/${QT_PROTOBUF_NAMESPACE}Protobuf/google/protobuf)
+
 qt_protobuf_internal_add_library(ProtobufWellKnownTypes
     SOURCES
         dummy.cpp
@@ -33,6 +35,12 @@ function(add_wellknowntype type_name)
                 FOLDER
                 ${extra_type_libraries_options}
             )
+            if(QT_PROTOBUF_INSTALL)
+                install(FILES
+                        "${CMAKE_CURRENT_BINARY_DIR}/generated/google/protobuf/${type_name}.qpb.h"
+                    DESTINATION "${wellknowntypes_install_includedir}"
+                )
+            endif()
             target_include_directories(${type_name} PRIVATE
                 "$<TARGET_PROPERTY:ProtobufWellKnownTypes,INTERFACE_INCLUDE_DIRECTORIES>"
             )
