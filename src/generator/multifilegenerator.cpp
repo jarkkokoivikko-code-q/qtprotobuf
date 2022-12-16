@@ -201,7 +201,7 @@ std::list<const ::google::protobuf::Descriptor *> MultiFileGenerator::findNested
 }
 
 
-bool MultiFileGenerator::GenerateAll(const std::vector<const FileDescriptor *> &files, const string &parameter, GeneratorContext *generatorContext, string *error) const
+bool MultiFileGenerator::GenerateAll(const std::vector<const FileDescriptor *> &files, const std::string &parameter, GeneratorContext *generatorContext, std::string *error) const
 {
     std::string globalEnumsFilename = "globalenums";
 

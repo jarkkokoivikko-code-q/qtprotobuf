@@ -45,7 +45,7 @@ GeneratorBase::GeneratorBase(Mode mode) : m_mode(mode)
 
 }
 
-bool GeneratorBase::GenerateAll(const std::vector<const FileDescriptor *> &files, const string &parameter, GeneratorContext *generatorContext, string *error) const
+bool GeneratorBase::GenerateAll(const std::vector<const FileDescriptor *> &files, const std::string &parameter, GeneratorContext *generatorContext, std::string *error) const
 {
     return CodeGenerator::GenerateAll(files, parameter, generatorContext, error);
 }
