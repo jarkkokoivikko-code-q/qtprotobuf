@@ -1,4 +1,4 @@
-if(WrapgRPC_FOUND)
+if(gRPC_FOUND)
     include(QtProtobufTestHelpers)
     add_subdirectory("examples_common")
 

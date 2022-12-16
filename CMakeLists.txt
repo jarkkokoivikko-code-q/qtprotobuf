@@ -22,9 +22,9 @@ set(QT_PROTOBUF_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
 list(PREPEND CMAKE_MODULE_PATH ${QT_PROTOBUF_CMAKE_DIR})
 
-find_package(WrapgRPC)
 if(NOT CMAKE_CROSSCOMPILING)
-    find_package(WrapProtobuf COMPONENTS Protoc OPTIONAL_COMPONENTS Generator Protobuf REQUIRED)
+    set(Protobuf_USE_STATIC_LIBS ON)
+    find_package(Protobuf COMPONENTS Protoc OPTIONAL_COMPONENTS Generator Protobuf REQUIRED)
 else()
     if(NOT QT_PROTOBUF_HOST_PATH)
         message(FATAL_ERROR "QT_PROTOBUF_HOST_PATH is not specified. You shall specify
@@ -35,6 +35,7 @@ QT_PROTOBUF_HOST_PATH to find the host version of QtProtobufGenerator")
         NO_DEFAULT_PATH
     )
 endif()
+find_package(gRPC CONFIG REQUIRED)
 find_package(Threads)
 find_package(${QT_VERSIONED_PREFIX} COMPONENTS Core Qml CONFIG REQUIRED)
 find_package(${QT_VERSIONED_PREFIX} OPTIONAL_COMPONENTS Network Quick Gui CONFIG)
@@ -44,27 +45,7 @@ set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ${${QT_VERSIONED_PREFIX}_POSITION_INDEPENDENT_CODE})
-if(UNIX)
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        # using Clang
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-pessimizing-move -Wno-mismatched-tags -Wno-unused-private-field -Wno-self-assign-overloaded")
-    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        # using GCC
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-error=deprecated-declarations")
-    endif()
-elseif(WIN32)
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-#TODO: not all l4 warnings are fixed for MSVC. Enable options bellow
-#      once fixed
-#        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX /W4 /MD")
-#        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX /W4 /MD")
-        #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /bigobj /wd4005")
-        #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4005")
-    else()
-        message(WARNING "Only MSVC compilers family are supported for build")
-    endif()
-endif()
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(QtProtobufInternalHelpers)
 include(QtProtobufCoverage)
@@ -84,7 +65,7 @@ set(QT_PROTOBUF_NATIVE_GRPC_CHANNEL OFF CACHE BOOL "Enable native gRPC channel i
 
 if(NOT QT_PROTOBUF_STANDALONE_TESTS)
     if(QT_PROTOBUF_NATIVE_GRPC_CHANNEL)
-        if(NOT WrapgRPC_FOUND OR NOT Threads_FOUND)
+        if(NOT gRPC_FOUND OR NOT Threads_FOUND)
             message("QT_PROTOBUF_NATIVE_GRPC_CHANNEL is ON, but required dependencies are not found.")
             set(QT_PROTOBUF_NATIVE_GRPC_CHANNEL OFF)
         endif()
@@ -95,10 +76,7 @@ if(NOT QT_PROTOBUF_STANDALONE_TESTS)
         set(QT_PROTOBUF_MAKE_EXAMPLES OFF)
     endif()
 
-    set(QT_PROTOBUF_STATIC OFF CACHE INTERNAL "" FORCE)
-    if(NOT BUILD_SHARED_LIBS)
-        set(QT_PROTOBUF_STATIC ON CACHE INTERNAL "" FORCE)
-    endif()
+    set(QT_PROTOBUF_STATIC ON CACHE INTERNAL "" FORCE)
 
     set(extra_type_libraries_options "") #Prevent to set from outside
     if(QT_PROTOBUF_FIELD_ENUM)
@@ -114,10 +92,6 @@ if(NOT QT_PROTOBUF_STANDALONE_TESTS)
         COMPONENT dev
     )
     export(PACKAGE ${QT_PROTOBUF_NAMESPACE})
-    install(FILES "${QT_PROTOBUF_CMAKE_DIR}/FindWrapProtobuf.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${QT_PROTOBUF_NAMESPACE}"
-        COMPONENT dev
-    )
 
     if(NOT CMAKE_CROSSCOMPILING)
         add_subdirectory("src/generator")

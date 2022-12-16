@@ -26,7 +26,7 @@ if(TARGET ${QT_PROTOBUF_NAMESPACE}::ProtobufQtTypes)
     add_subdirectory("test_qttypes")
 endif()
 
-if(WrapgRPC_FOUND AND TARGET ${QT_PROTOBUF_NAMESPACE}::Grpc)
+if(gRPC_FOUND AND TARGET ${QT_PROTOBUF_NAMESPACE}::Grpc)
     if(UNIX)
         set(TEST_DRIVER_NAME "test_driver.sh")
     elseif(WIN32)
