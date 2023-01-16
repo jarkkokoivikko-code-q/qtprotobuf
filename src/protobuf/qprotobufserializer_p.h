@@ -303,7 +303,13 @@ public:
     static void deserializeBasic(QProtobufSelfcheckIterator &it, QVariant &variantValue) {
         qProtoDebug() << __func__ << "currentByte:" << QString::number((*it), 16);
 
+#if defined(Q_PROCESSOR_ARM)
+        V v;
+        memcpy(&v, it.data(), sizeof(V));
+        variantValue = QVariant::fromValue(v);
+#else
         variantValue = QVariant::fromValue(*(V *)((QByteArray::const_iterator&)it));
+#endif
         it += sizeof(V);
     }
 
