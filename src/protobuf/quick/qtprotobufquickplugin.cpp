@@ -40,7 +40,7 @@ void QtProtobufQuickPlugin::registerTypes(const char *uri)
     // @uri QtProtobuf
     Q_ASSERT(uri == QLatin1String("QtProtobuf"));
     qmlRegisterModule(uri, QT_PROTOBUF_VERSION_MAJOR, QT_PROTOBUF_VERSION_MINOR);
-    QQmlMetaType::registerCustomStringConverter(qMetaTypeId<QtProtobuf::int32>(), coverter<QtProtobuf::int32>);
-    QQmlMetaType::registerCustomStringConverter(qMetaTypeId<QtProtobuf::fixed32>(), coverter<QtProtobuf::fixed32>);
-    QQmlMetaType::registerCustomStringConverter(qMetaTypeId<QtProtobuf::sfixed32>(), coverter<QtProtobuf::sfixed32>);
+    //QQmlMetaType::registerCustomStringConverter(qMetaTypeId<QtProtobuf::int32>(), coverter<QtProtobuf::int32>);
+    //QQmlMetaType::registerCustomStringConverter(qMetaTypeId<QtProtobuf::fixed32>(), coverter<QtProtobuf::fixed32>);
+    //QQmlMetaType::registerCustomStringConverter(qMetaTypeId<QtProtobuf::sfixed32>(), coverter<QtProtobuf::sfixed32>);
 }

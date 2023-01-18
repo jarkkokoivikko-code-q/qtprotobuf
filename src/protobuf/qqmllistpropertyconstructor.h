@@ -38,13 +38,13 @@ static void qmllistpropertyAppend(QQmlListProperty<T> *p, T *v) {
 
 //! \private
 template<typename T>
-static int qmllistpropertyCount(QQmlListProperty<T> *p) {
+static qsizetype qmllistpropertyCount(QQmlListProperty<T> *p) {
     return reinterpret_cast<QList<QSharedPointer<T>> *>(p->data)->count();
 }
 
 //! \private
 template<typename T>
-static T *qmllistpropertyAt(QQmlListProperty<T> *p, int index) {
+static T *qmllistpropertyAt(QQmlListProperty<T> *p, qsizetype index) {
     return reinterpret_cast<QList<QSharedPointer<T>> *>(p->data)->at(index).data();
 }
 
@@ -58,7 +58,7 @@ static void qmllistpropertyReset(QQmlListProperty<T> *p) {
 template<typename T>
 static QQmlListProperty<T> constructQmlListProperty(QObject *p, QList<QSharedPointer<T>> *data)
 {
-    return QQmlListProperty<T>(p, data, qmllistpropertyAppend<T>, qmllistpropertyCount<T>,
+    return QQmlListProperty<T>(p, reinterpret_cast<void *>(data), qmllistpropertyAppend<T>, qmllistpropertyCount<T>,
                                qmllistpropertyAt<T>, qmllistpropertyReset<T>);
 }
 
