@@ -66,10 +66,19 @@ public:
     }
 
     bool operator ==(const QProtobufLazyMessagePointer &other) const {
-        return (m_ptr == nullptr && other.m_ptr == nullptr)
-                || (other.m_ptr == nullptr && *m_ptr == T{})
-                || (m_ptr == nullptr && *other.m_ptr == T{})
-                || (m_ptr != nullptr && other.m_ptr != nullptr && *m_ptr == *other.m_ptr);
+        if (m_ptr == nullptr) {
+            if (other.m_ptr == nullptr)
+                return true;
+            if (*other.m_ptr == T{})
+                return true;
+            return false;
+        }
+        if (other.m_ptr == nullptr) {
+            if (*m_ptr == T{})
+                return true;
+            return false;
+        }
+        return *m_ptr == *other.m_ptr;
     }
 
     bool operator !=(const QProtobufLazyMessagePointer &other) const {
