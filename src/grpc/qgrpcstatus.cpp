@@ -27,77 +27,73 @@
 
 namespace QtProtobuf {
 //! \private
-class QGrpcStatusPrivate {
-public:
-    QGrpcStatusPrivate(QGrpcStatus::StatusCode code, const QString &message) : m_code(code)
-      , m_message(message)
-    {}
-
-    ~QGrpcStatusPrivate() = default;
-
-    QGrpcStatus::StatusCode m_code;
-    QString m_message;
-};
 
 QGrpcStatus::QGrpcStatus(StatusCode code, const QString &message) :
-    dPtr(std::make_unique<QGrpcStatusPrivate>(code, message))
+    m_code(code),
+    m_message(message)
 {}
 
-QGrpcStatus::QGrpcStatus(const QGrpcStatus &other) : dPtr(std::make_unique<QGrpcStatusPrivate>(other.dPtr->m_code, other.dPtr->m_message))
-{}
+QGrpcStatus::QGrpcStatus(const QGrpcStatus &other)
+{
+    QReadLocker readLock(&other.m_lock);
+    m_code = other.m_code;
+    m_message = other.message();
+}
 
-QGrpcStatus::QGrpcStatus(QGrpcStatus &&other) : dPtr(std::move(other.dPtr))
+QGrpcStatus::QGrpcStatus(QGrpcStatus &&other) :
+    m_code(other.m_code),
+    m_message(other.m_message)
 {
 }
 
 QGrpcStatus &QGrpcStatus::operator =(const QGrpcStatus &other)
 {
-    dPtr->m_code = other.dPtr->m_code;
-    dPtr->m_message = other.dPtr->m_message;
+    if (&other != this) {
+        QReadLocker readLock(&other.m_lock);
+        QWriteLocker writeLock(&m_lock);
+        m_code = other.m_code;
+        m_message = other.message();
+    }
     return *this;
 }
 
 QGrpcStatus &QGrpcStatus::operator =(QGrpcStatus &&other)
 {
-    dPtr = std::move(other.dPtr);
+    QWriteLocker writeLock(&m_lock);
+    m_code = other.m_code;
+    m_message = other.message();
     return *this;
 }
 
-QGrpcStatus::~QGrpcStatus()
-{}
-
 QString QGrpcStatus::message() const
 {
-    return dPtr->m_message;
+    QReadLocker readLock(&m_lock);
+    return m_message;
 }
 
 QGrpcStatus::StatusCode QGrpcStatus::code() const
 {
-    return dPtr->m_code;
+    QReadLocker readLock(&m_lock);
+    return m_code;
 }
 
 bool QGrpcStatus::operator ==(StatusCode code) const
 {
-    return dPtr->m_code == code;
+    QReadLocker readLock(&m_lock);
+    return m_code == code;
 }
 
 bool QGrpcStatus::operator !=(StatusCode code) const
 {
-    return dPtr->m_code != code;
+    QReadLocker readLock(&m_lock);
+    return m_code != code;
 }
 
 bool QGrpcStatus::operator ==(const QGrpcStatus &other) const
 {
-    return dPtr->m_code == other.dPtr->m_code;
+    QReadLocker readLock1(&m_lock);
+    QReadLocker readLock2(&other.m_lock);
+    return m_code == other.m_code;
 }
 
-}
-
-bool operator ==(QtProtobuf::QGrpcStatus::StatusCode code, const QtProtobuf::QGrpcStatus &status)
-{
-    return status == code;
-}
-bool operator !=(QtProtobuf::QGrpcStatus::StatusCode code, const QtProtobuf::QGrpcStatus &status)
-{
-    return status != code;
 }

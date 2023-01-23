@@ -27,6 +27,7 @@
 
 #include <QString>
 #include <QMetaType>
+#include <QReadWriteLock>
 #include <qobjectdefs.h>
 
 #include "qtgrpcglobal.h"
@@ -89,7 +90,6 @@ public:
     Q_ENUM(StatusCode)
 
     QGrpcStatus(StatusCode code = StatusCode::Ok, const QString &message = QString());
-    ~QGrpcStatus();
 
     /*!
      * \brief code getter for QGrpcStatus::StatusCode received for prior gRPC call.
@@ -107,16 +107,25 @@ public:
 
     QGrpcStatus(const QGrpcStatus &other);
     QGrpcStatus &operator =(const QGrpcStatus &other);
-
     QGrpcStatus(QGrpcStatus &&other);
     QGrpcStatus &operator =(QGrpcStatus &&other);
 
 private:
-    std::unique_ptr<QGrpcStatusPrivate> dPtr;
+    mutable QReadWriteLock m_lock;
+    QGrpcStatus::StatusCode m_code;
+    QString m_message;
 };
+
 }
 
-bool operator ==(QtProtobuf::QGrpcStatus::StatusCode code, const QtProtobuf::QGrpcStatus &status);
-bool operator !=(QtProtobuf::QGrpcStatus::StatusCode code, const QtProtobuf::QGrpcStatus &status);
+inline bool operator ==(QtProtobuf::QGrpcStatus::StatusCode code, const QtProtobuf::QGrpcStatus &status)
+{
+    return status == code;
+}
+
+inline bool operator !=(QtProtobuf::QGrpcStatus::StatusCode code, const QtProtobuf::QGrpcStatus &status)
+{
+    return status != code;
+}
 
 Q_DECLARE_METATYPE(QtProtobuf::QGrpcStatus)
