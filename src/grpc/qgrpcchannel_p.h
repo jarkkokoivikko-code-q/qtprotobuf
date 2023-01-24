@@ -131,6 +131,7 @@ public:
     void newData(bool ok);
     void finishRead(bool ok);
     void finishWrite(bool ok);
+    void dequeueWrite();
 
 signals:
     void dataReady(const QByteArray &data);

@@ -177,6 +177,7 @@ QGrpcChannelStreamBidirect::~QGrpcChannelStreamBidirect()
 void QGrpcChannelStreamBidirect::startReader()
 {
     m_status = QGrpcStatus();
+    m_inProcess = true; // Until FIRST_CALL
     m_reader = grpc::internal::ClientAsyncReaderWriterFactory<grpc::ByteBuffer, grpc::ByteBuffer>::Create(
                 m_channel, m_queue,
                 grpc::internal::RpcMethod(m_method.data(), grpc::internal::RpcMethod::BIDI_STREAMING),
@@ -219,6 +220,7 @@ void QGrpcChannelStreamBidirect::newData(bool ok)
         return;
     }
     if (m_readerState == FIRST_CALL) {
+        dequeueWrite();
         m_reader->Read(&response, &m_newData);
         m_readerState = PROCESSING;
         return;
@@ -280,7 +282,13 @@ void QGrpcChannelStreamBidirect::finishWrite(bool ok)
         m_currentWriteReplay->setStatus(QGrpcWriteReplay::WriteStatus::OK);
         m_currentWriteReplay->emitFinished();
     }
-    if (!m_sendQueue.isEmpty()) {
+    dequeueWrite();
+}
+
+void QGrpcChannelStreamBidirect::dequeueWrite()
+{
+    m_inProcess = !m_sendQueue.isEmpty();
+    if (m_inProcess) {
         QGrpcChannelWriteData d = m_sendQueue.dequeue();
         if (d.done) {
             m_reader->WritesDone(&m_finishWrite);
@@ -290,8 +298,6 @@ void QGrpcChannelStreamBidirect::finishWrite(bool ok)
             m_currentWriteReplay = d.replay;
             m_reader->Write(data, &m_finishWrite);
         }
-    } else {
-        m_inProcess = false;
     }
 }
 
