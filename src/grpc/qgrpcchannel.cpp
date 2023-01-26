@@ -88,7 +88,7 @@ QGrpcChannelStream::QGrpcChannelStream(grpc::Channel *channel, grpc::CompletionQ
 
 QGrpcChannelStream::~QGrpcChannelStream()
 {
-    cancel();
+    qProtoDebug() << "~QGrpcChannelStream" << this;
     if (m_reader != nullptr) {
         delete m_reader;
     }
@@ -99,32 +99,35 @@ void QGrpcChannelStream::startReader()
     m_status = QGrpcStatus();
     grpc::ByteBuffer request;
     parseQByteArray(m_argument, request);
+    m_refCount.ref();
     m_reader = grpc::internal::ClientAsyncReaderFactory<grpc::ByteBuffer>::Create(
                 m_channel, m_queue,
                 grpc::internal::RpcMethod(m_method.data(), grpc::internal::RpcMethod::SERVER_STREAMING),
                 &m_context, request, true, &m_newData);
+    m_refCount.ref();
     m_reader->Finish(&m_grpc_status, &m_finishRead);
+    qProtoDebug() << "QGrpcChannelStream startReader, refCount" << m_refCount;
 }
 
 void QGrpcChannelStream::cancel()
 {
     // TODO: check thread safety
-    qProtoDebug() << "Stream cancelled";
+    qProtoDebug() << "QGrpcChannelStream cancel, refCount" << m_refCount;
     m_context.TryCancel();
 }
 
 void QGrpcChannelStream::newData(bool ok)
 {
+    qProtoDebug() << "QGrpcChannelStream newData, refCount" << m_refCount;
     if (!ok) {
-        qProtoDebug() << "QGrpcChannelStream error tag received!";
-        return;
-    }
-    if (m_readerState == FIRST_CALL) {
+        qProtoDebug() << "QGrpcChannelStream error tag received";
+        m_readerState = ENDED;
+    } else if (m_readerState == FIRST_CALL) {
+        m_refCount.ref();
         m_reader->Read(&response, &m_newData);
         m_readerState = PROCESSING;
-        return;
-    }
-    if (m_readerState == PROCESSING) {
+        qProtoDebug() << "QGrpcChannelStream first call received";
+    } else if (m_readerState == PROCESSING) {
         QByteArray data;
         m_grpc_status = parseByteBuffer(response, data);
         if (!m_grpc_status.ok()) {
@@ -133,19 +136,25 @@ void QGrpcChannelStream::newData(bool ok)
             m_readerState = ENDED;
             // emit finished();
             cancel();
-            return;
+        } else {
+            emit dataReady(data);
+            m_refCount.ref();
+            m_reader->Read(&response, &m_newData);
         }
-        emit dataReady(data);
-        m_reader->Read(&response, &m_newData);
+    }
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelStream at newData" << this;
+        delete this;
     }
 }
 
 void QGrpcChannelStream::finishRead(bool ok)
 {
-    qProtoDebug() << "Finish QGrpcChannelStream received status, ok:" << ok
+    qProtoDebug() << "QGrpcChannelStream finishRead, ok:" << ok
            << "code:" << m_grpc_status.error_code()
            << "message:" << QString::fromStdString(m_grpc_status.error_message())
-           << "detail:" << QString::fromStdString(m_grpc_status.error_details());
+           << "detail:" << QString::fromStdString(m_grpc_status.error_details())
+           << "refCount:" << m_refCount;
 
     // If was parsing error, then grpc_status.ok()==true and status.code()!=OK, we should not fill
     // because this is error on top level
@@ -154,6 +163,11 @@ void QGrpcChannelStream::finishRead(bool ok)
                                QString::fromStdString(m_grpc_status.error_message()));
     }
     emit finished();
+
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelStream at finishRead" << this;
+        delete this;
+    }
 }
 
 QGrpcChannelStreamBidirect::QGrpcChannelStreamBidirect(grpc::Channel *channel, grpc::CompletionQueue *queue, const QString &method, QObject *parent) :
@@ -168,7 +182,7 @@ QGrpcChannelStreamBidirect::QGrpcChannelStreamBidirect(grpc::Channel *channel, g
 
 QGrpcChannelStreamBidirect::~QGrpcChannelStreamBidirect()
 {
-    cancel();
+    qProtoDebug() << "~QGrpcChannelStreamBidirect" << this;
     if (m_reader != nullptr) {
         delete m_reader;
     }
@@ -178,30 +192,41 @@ void QGrpcChannelStreamBidirect::startReader()
 {
     m_status = QGrpcStatus();
     m_inProcess = true; // Until FIRST_CALL
+    m_refCount.ref();
     m_reader = grpc::internal::ClientAsyncReaderWriterFactory<grpc::ByteBuffer, grpc::ByteBuffer>::Create(
                 m_channel, m_queue,
                 grpc::internal::RpcMethod(m_method.data(), grpc::internal::RpcMethod::BIDI_STREAMING),
                 &m_context, true, &m_newData);
+    m_refCount.ref();
     m_reader->Finish(&m_grpc_status, &m_finishRead);
+    qProtoDebug() << "QGrpcChannelStreamBidirect startReader, refCount" << m_refCount;
 }
 
 void QGrpcChannelStreamBidirect::cancel()
 {
+    qProtoDebug() << "QGrpcChannelStreamBidirect cancel, refCount" << m_refCount;
     m_context.TryCancel();
 }
 
 void QGrpcChannelStreamBidirect::writeDone(const QGrpcWriteReplayShared& replay)
 {
+    qProtoDebug() << "QGrpcChannelStreamBidirect writeDone, m_inProcess" << m_inProcess << "refCount" << m_refCount;
     if (m_inProcess) {
         m_sendQueue.enqueue({QByteArray(), replay, true});
-        return;
+    } else {
+        m_currentWriteReplay = replay;
+        m_refCount.ref();
+        m_reader->WritesDone(&m_finishWrite);
     }
-    m_currentWriteReplay = replay;
-    m_reader->WritesDone(&m_finishWrite);
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelStreamBidirect at writeDone" << this;
+        delete this;
+    }
 }
 
 void QGrpcChannelStreamBidirect::appendToSend(const QByteArray& data, const QGrpcWriteReplayShared& replay)
 {
+    qProtoDebug() << "QGrpcChannelStreamBidirect appendToSend, m_inProcess" << m_inProcess;
     if (m_inProcess) {
         m_sendQueue.enqueue({data, replay, false});
         return;
@@ -210,44 +235,51 @@ void QGrpcChannelStreamBidirect::appendToSend(const QByteArray& data, const QGrp
     grpc::ByteBuffer dataParsed;
     parseQByteArray(data, dataParsed);
     m_currentWriteReplay = replay;
+    m_refCount.ref();
     m_reader->Write(dataParsed, &m_finishWrite);
 }
 
 void QGrpcChannelStreamBidirect::newData(bool ok)
 {
+    qProtoDebug() << "QGrpcChannelStreamBidirect newData, refCount" << m_refCount;
     if (!ok) {
-        qProtoDebug() << "QGrpcChannelStreamBidirect error tag received!";
-        return;
-    }
-    if (m_readerState == FIRST_CALL) {
+        qProtoDebug() << "QGrpcChannelStreamBidirect error tag received";
+        m_readerState = ENDED;
+    } else if (m_readerState == FIRST_CALL) {
         dequeueWrite();
+        m_refCount.ref();
         m_reader->Read(&response, &m_newData);
         m_readerState = PROCESSING;
-        return;
-    }
-    if (m_readerState == PROCESSING) {
+    } else if (m_readerState == PROCESSING) {
         QByteArray data;
         m_grpc_status = parseByteBuffer(response, data);
         if (!m_grpc_status.ok()) {
+            qProtoDebug() << "QGrpcChannelStreamBidirect failed to parse data";
             m_status = QGrpcStatus(static_cast<QGrpcStatus::StatusCode>(m_grpc_status.error_code()),
                                    QString::fromStdString(m_grpc_status.error_message()));
             m_readerState = ENDED;
             // emit finished();
             cancel();
-            return;
+        } else {
+            emit dataReady(data);
+            m_refCount.ref();
+            m_reader->Read(&response, &m_newData);
         }
-        emit dataReady(data);
-        m_reader->Read(&response, &m_newData);
+    }
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelStreamBidirect at newData" << this;
+        delete this;
     }
 }
 
 void QGrpcChannelStreamBidirect::finishRead(bool ok)
 {
-    qProtoDebug() << "Finish QGrpcChannelStreamBidirect received status, ok:"
+    qProtoDebug() << "QGrpcChannelStreamBidirect finishRead status, ok:"
                   << ok << "code:" << m_grpc_status.error_code() << "message:"
                   << QString::fromStdString(m_grpc_status.error_message())
                   << "detail:"
-                  << QString::fromStdString(m_grpc_status.error_details());
+                  << QString::fromStdString(m_grpc_status.error_details())
+                  << "refCount:" << m_refCount;
 
     // If was parsing error, then grpc_status.ok()==true and status.code()!=OK, we
     // should not fill because this is error on top level
@@ -258,22 +290,29 @@ void QGrpcChannelStreamBidirect::finishRead(bool ok)
     }
 
     // Finish all write replay
-    if (m_inProcess) {
+    if (m_inProcess && m_currentWriteReplay) {
         m_currentWriteReplay->setStatus(QGrpcWriteReplay::WriteStatus::Failed);
-        emit m_currentWriteReplay->finished();
-        emit m_currentWriteReplay->error();
+        m_currentWriteReplay->emitError();
+        m_currentWriteReplay->emitFinished();
     }
     while (!m_sendQueue.empty()) {
         QGrpcChannelWriteData d = m_sendQueue.dequeue();
         d.replay->setStatus(QGrpcWriteReplay::WriteStatus::Failed);
-        emit d.replay->finished();
-        emit d.replay->error();
+        d.replay->emitError();
+        d.replay->emitFinished();
     }
     emit finished();
+
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelStreamBidirect at finishRead" << this;
+        delete this;
+    }
 }
 
 void QGrpcChannelStreamBidirect::finishWrite(bool ok)
 {
+    qProtoDebug() << "QGrpcChannelStreamBidirect finishWrite, ok" << ok << "refCount" << m_refCount;
+
     if (!ok) {
         m_currentWriteReplay->setStatus(QGrpcWriteReplay::WriteStatus::Failed);
         m_currentWriteReplay->emitError();
@@ -282,7 +321,13 @@ void QGrpcChannelStreamBidirect::finishWrite(bool ok)
         m_currentWriteReplay->setStatus(QGrpcWriteReplay::WriteStatus::OK);
         m_currentWriteReplay->emitFinished();
     }
-    dequeueWrite();
+
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelStreamBidirect at finishWrite" << this;
+        delete this;
+    } else {
+        dequeueWrite();
+    }
 }
 
 void QGrpcChannelStreamBidirect::dequeueWrite()
@@ -291,11 +336,13 @@ void QGrpcChannelStreamBidirect::dequeueWrite()
     if (m_inProcess) {
         QGrpcChannelWriteData d = m_sendQueue.dequeue();
         if (d.done) {
+            m_refCount.ref();
             m_reader->WritesDone(&m_finishWrite);
         } else {
             grpc::ByteBuffer data;
             parseQByteArray(d.data, data);
             m_currentWriteReplay = d.replay;
+            m_refCount.ref();
             m_reader->Write(data, &m_finishWrite);
         }
     }
@@ -313,7 +360,7 @@ QGrpcChannelCall::QGrpcChannelCall(grpc::Channel *channel, grpc::CompletionQueue
 
 QGrpcChannelCall::~QGrpcChannelCall()
 {
-    cancel();
+    qProtoDebug() << "~QGrpcChannelCall" << this;
     // TODO wait while Finished will called?
     if (m_reader != nullptr) {
         delete m_reader;
@@ -327,33 +374,34 @@ void QGrpcChannelCall::startReader()
     parseQByteArray(m_argument, request);
     grpc::internal::RpcMethod method_(m_method.data(),
                                       grpc::internal::RpcMethod::NORMAL_RPC);
+    m_refCount.ref();
     m_reader = grpc::internal::ClientAsyncReaderFactory<grpc::ByteBuffer>::Create(
                 m_channel, m_queue, method_, &m_context, request, true, &m_newData);
+    m_refCount.ref();
     m_reader->Finish(&m_grpc_status, &m_finishRead);
+    qProtoDebug() << "QGrpcChannelCall startReader, refCount" << m_refCount;
 }
 
 void QGrpcChannelCall::cancel()
 {
     // TODO: check thread safety
-    qProtoDebug() << "Call cancelled";
+    qProtoDebug() << "QGrpcChannelCall cancel, refCount" << m_refCount;
     m_context.TryCancel();
 }
 
 void QGrpcChannelCall::newData(bool ok)
 {
+    qProtoDebug() << "QGrpcChannelCall newData, refCount" << m_refCount;
     if (!ok) {
         // this->status=QGrpcStatus(QGrpcStatus::Aborted,"Some error happens");
         // emit finished();
         qProtoDebug() << "QGrpcChannelCall error tag received!";
-        return;
-    }
-    if (m_readerState == FIRST_CALL) {
+    } else if (m_readerState == FIRST_CALL) {
         // read next value
+        m_refCount.ref();
         m_reader->Read(&response, &m_newData);
         m_readerState = PROCESSING;
-        return;
-    }
-    if (m_readerState == PROCESSING) {
+    } else if (m_readerState == PROCESSING) {
         m_grpc_status = parseByteBuffer(response, responseParsed);
         m_status = QGrpcStatus(static_cast<QGrpcStatus::StatusCode>(m_grpc_status.error_code()),
                                QString::fromStdString(m_grpc_status.error_message()));
@@ -361,14 +409,19 @@ void QGrpcChannelCall::newData(bool ok)
         // cancel();
         // emit finished();
     }
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelCall at newData" << this;
+        delete this;
+    }
 }
 
 void QGrpcChannelCall::finishRead(bool ok)
 {
-    qProtoDebug() << "Finish QGrpcChannelCall received status, ok:" << ok
+    qProtoDebug() << "QGrpcChannelCall finishRead, ok:" << ok
            << "code:" << m_grpc_status.error_code()
            << "message:" << QString::fromStdString(m_grpc_status.error_message())
-           << "detail:" << QString::fromStdString(m_grpc_status.error_details());
+           << "detail:" << QString::fromStdString(m_grpc_status.error_details())
+           << "refCount:" << m_refCount;
 
     // If was parsing error, then grpc_status.ok()==true and status.code()!=OK, we should not fill
     // because this is error on top level
@@ -377,6 +430,11 @@ void QGrpcChannelCall::finishRead(bool ok)
                                QString::fromStdString(m_grpc_status.error_message()));
     }
     emit finished();
+
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelCall at finishRead" << this;
+        delete this;
+    }
 }
 
 QGrpcChannelPrivate::QGrpcChannelPrivate(const QUrl &url, std::shared_ptr<grpc::ChannelCredentials> credentials) :
@@ -403,6 +461,7 @@ QGrpcChannelPrivate::QGrpcChannelPrivate(const QUrl &url, std::shared_ptr<grpc::
 
 QGrpcChannelPrivate::~QGrpcChannelPrivate()
 {
+    qProtoDebug() << "Trying ~QGrpcChannelPrivate()" << this;
     m_queue.Shutdown();
     m_workThread->wait();
     m_workThread->deleteLater();
@@ -417,8 +476,8 @@ void QGrpcChannelPrivate::call(const QString &method, const QString &service, co
     std::shared_ptr<QMetaObject::Connection> abortConnection(new QMetaObject::Connection);
     std::shared_ptr<QMetaObject::Connection> clientConnection(new QMetaObject::Connection);
 
-    call.reset(new QGrpcChannelCall(m_channel.get(), &m_queue, rpcName, args, reply),
-               [](QGrpcChannelCall *c) { c->deleteLater(); });
+    call.reset(new QGrpcChannelCall(m_channel.get(), &m_queue, rpcName, args, nullptr),
+               [](QGrpcChannelCall *c) { c->sharedPtrReleased(); });
 
     *clientConnection = QObject::connect(
                 this, &QGrpcChannelPrivate::finished, reply,
@@ -501,7 +560,7 @@ void QGrpcChannelPrivate::stream(QGrpcStream *stream, const QString &service, QA
     std::shared_ptr<QMetaObject::Connection> channelFinished(new QMetaObject::Connection);
 
     sub.reset(new QGrpcChannelStream(m_channel.get(), &m_queue, rpcName, stream->arg(), stream),
-              [](QGrpcChannelStream *sub) { sub->deleteLater(); });
+              [](QGrpcChannelStream *sub) { sub->sharedPtrReleased(); });
 
     *readConnection = QObject::connect(sub.get(), &QGrpcChannelStream::dataReady, stream,
                                        [stream](const QByteArray &data) {stream->handler(data);});
@@ -587,7 +646,7 @@ void QGrpcChannelPrivate::stream(QGrpcStreamBidirect *stream, const QString &ser
     std::shared_ptr<QMetaObject::Connection> channelFinished(new QMetaObject::Connection);
 
     sub.reset(new QGrpcChannelStreamBidirect(m_channel.get(), &m_queue, rpcName, stream),
-              [](QGrpcChannelStreamBidirect *sub) { sub->deleteLater(); });
+              [](QGrpcChannelStreamBidirect *sub) { sub->sharedPtrReleased(); });
 
     *readConnection = QObject::connect(
                 sub.get(), &QGrpcChannelStreamBidirect::dataReady, stream,
@@ -719,6 +778,15 @@ std::shared_ptr<QAbstractProtobufSerializer> QGrpcChannel::serializer() const
 {
     // TODO: make selection based on credentials or channel settings
     return QProtobufSerializerRegistry::instance().getSerializer(u"protobuf"_qs);
+}
+
+void QGrpcChannelBaseCall::sharedPtrReleased()
+{
+    qProtoDebug() << "sharedPtrReleased" << this;
+    if (!m_refCount.deref()) {
+        qProtoDebug() << "Destroy QGrpcChannelBaseCall at sharedPtrReleased" << this;
+        delete this;
+    }
 }
 
 }

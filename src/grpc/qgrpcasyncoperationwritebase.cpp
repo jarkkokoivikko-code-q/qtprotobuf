@@ -40,7 +40,7 @@ QGrpcAsyncOperationWriteBase::~QGrpcAsyncOperationWriteBase()
 {
     qProtoDebug() << "Trying ~QGrpcAsyncOperationWriteBase" << this;
     QMutexLocker locker(&m_asyncLock);
-    qProtoDebug() << "~QGrpcAsyncOperationBase" << this;
+    qProtoDebug() << "~QGrpcAsyncOperationWriteBase" << this;
     (void)locker;
 }
 

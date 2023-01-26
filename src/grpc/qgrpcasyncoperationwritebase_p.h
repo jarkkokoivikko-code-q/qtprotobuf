@@ -86,11 +86,11 @@ public:
                 return write(value);
             }, Qt::BlockingQueuedConnection, &writeShared);
             return writeShared;
-        } else {
+        } else if (m_client) {
             QMutexLocker locker(&m_asyncLock);
             try {
                 m_writeReplay = QSharedPointer<QGrpcWriteReplay>(new QGrpcWriteReplay(), &QObject::deleteLater);
-                m_writeData = value.serialize(static_cast<QAbstractGrpcClient *>(parent())->serializer().get());
+                m_writeData = value.serialize(m_client->serializer().get());
                 emit writeReady();
             } catch (std::invalid_argument &) {
                 m_writeReplay->setStatus(QGrpcWriteReplay::WriteStatus::Failed);
@@ -109,6 +109,7 @@ public:
             }
             return m_writeReplay;
         }
+        return nullptr;
     }
 
     /*!

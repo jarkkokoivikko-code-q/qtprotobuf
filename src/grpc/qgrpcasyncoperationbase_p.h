@@ -57,9 +57,8 @@ public:
     T read() {
         QMutexLocker locker(&m_asyncLock);
         T value;
-        auto client = static_cast<QAbstractGrpcClient*>(parent());
-        if (client) {
-            client->tryDeserialize(value, m_data);
+        if (m_client) {
+            m_client->tryDeserialize(value, m_data);
         }
         return value;
     }
@@ -105,6 +104,7 @@ private:
     QByteArray m_data;
 protected:
     QMutex m_asyncLock;
+    QAbstractGrpcClient *m_client;
 };
 
 }

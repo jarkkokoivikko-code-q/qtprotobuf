@@ -106,7 +106,7 @@ QGrpcCallReplyShared QAbstractGrpcClient::call(const QString &method, const QByt
                                       return call(method, arg);
                                   }, Qt::BlockingQueuedConnection, &reply);
     } else if (dPtr->channel) {
-        reply.reset(new QGrpcCallReply(this), [](QGrpcCallReply *reply) { reply->deleteLater(); });
+        reply.reset(new QGrpcCallReply(this), [](QGrpcCallReply *reply) { delete reply; });
 
         auto errorConnection = std::make_shared<QMetaObject::Connection>();
         auto finishedConnection = std::make_shared<QMetaObject::Connection>();
@@ -141,7 +141,7 @@ QGrpcStreamBidirectShared QAbstractGrpcClient::streamBidirect(const QString &met
                                       return streamBidirect(method, arg, handler);
                                   }, Qt::BlockingQueuedConnection, &grpcStream);
     } else if (dPtr->channel) {
-        grpcStream.reset(new QGrpcStreamBidirect(method, arg, handler, this), [](QGrpcStreamBidirect *stream) { stream->deleteLater(); });
+        grpcStream.reset(new QGrpcStreamBidirect(method, arg, handler, this), [](QGrpcStreamBidirect *stream) { delete stream; });
 
         auto it = std::find_if(std::begin(dPtr->activeStreamsBidirect), std::end(dPtr->activeStreamsBidirect), [grpcStream](const QGrpcStreamBidirectShared &activeStreamBidirect) {
            return *activeStreamBidirect == *grpcStream;
@@ -201,7 +201,7 @@ QGrpcStreamShared QAbstractGrpcClient::stream(const QString &method, const QByte
                                       return stream(method, arg, handler);
                                   }, Qt::BlockingQueuedConnection, &grpcStream);
     } else if (dPtr->channel) {
-        grpcStream.reset(new QGrpcStream(method, arg, handler, this), [](QGrpcStream *stream) { stream->deleteLater(); });
+        grpcStream.reset(new QGrpcStream(method, arg, handler, this), [](QGrpcStream *stream) { delete stream; });
 
         auto it = std::find_if(std::begin(dPtr->activeStreams), std::end(dPtr->activeStreams), [grpcStream](const QGrpcStreamShared &activeStream) {
            return *activeStream == *grpcStream;

@@ -30,7 +30,8 @@
 using namespace QtProtobuf;
 
 QtProtobuf::QGrpcAsyncOperationBase::QGrpcAsyncOperationBase(QAbstractGrpcClient *parent) :
-    QObject(parent)
+    QObject(nullptr), // Managed by shared_ptr
+    m_client(parent)
 {
 
 }

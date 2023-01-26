@@ -66,12 +66,15 @@ public:
     QGrpcStatus m_status;
     QGrpcChannelBaseCall(grpc::Channel *channel, grpc::CompletionQueue *queue,
                          const QString &method, QObject *parent = nullptr) :
-        QObject(parent),
+        QObject(nullptr), // Managed by shared_ptr
         m_readerState(FIRST_CALL),
         m_channel(channel),
         m_queue(queue),
-        m_method(method.toLatin1())
+        m_method(method.toLatin1()),
+        m_refCount(1) // +1 until shared_ptr released
     {}
+
+    void sharedPtrReleased();
 
 protected:
     ReaderState m_readerState;
@@ -83,6 +86,12 @@ protected:
     grpc::Channel *m_channel;
     grpc::CompletionQueue* m_queue;
     QByteArray m_method;
+
+    // Reference counting for QGrpcChannelBaseCall derived classes:
+    // +1 for all shared_ptr instances, decremented by sharedPtrReleased
+    // +1 for each m_reader call, decremented after call returns
+    // The instance is destroyed when the count is zero
+    QAtomicInt m_refCount;
 };
 
 //! \private

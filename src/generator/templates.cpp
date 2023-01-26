@@ -314,8 +314,9 @@ const char *Templates::ClientMethodDefinitionAsyncTemplate = "\nQtProtobuf::QGrp
 const char *Templates::ClientMethodDefinitionAsync2Template = "\nvoid $classname$::$method_name$(const $param_type$ &$param_name$, const QObject *context, const std::function<void(QGrpcCallReplyShared)> &callback)\n"
                                                               "{\n"
                                                               "    QtProtobuf::QGrpcCallReplyShared reply = call(\"$method_name$\", $param_name$);\n"
-                                                              "    QObject::connect(reply.get(), &QtProtobuf::QGrpcCallReply::finished, context, [reply, callback]() {\n"
+                                                              "    QObject::connect(reply.get(), &QtProtobuf::QGrpcCallReply::finished, context, [reply, callback]() mutable {\n"
                                                               "        callback(reply);\n"
+                                                              "        reply.reset();\n"
                                                               "    });\n"
                                                               "}\n";
 
