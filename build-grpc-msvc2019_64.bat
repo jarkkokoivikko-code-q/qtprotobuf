@@ -3,11 +3,16 @@ setlocal
 
 call env-msvc2019_64.cmd
 set SOURCE_DIR=%cd%\3rdparty\grpc
-set CMAKE_INSTALL_PREFIX=%cd%-msvc2019_64
+if "%~1"=="" (set CMAKE_INSTALL_PREFIX=%cd%-windows) else (set CMAKE_INSTALL_PREFIX=%~1\windows)
 
 if exist %cd%\..\openssl\openssl-win64 set OPENSSL_PARAMS=-DgRPC_SSL_PROVIDER=package -DOPENSSL_ROOT_DIR=%cd%\..\openssl\openssl-win64
 
-set BUILD_DIR=%cd%-build-3rdparty-grpc-msvc2019_64-Debug
+if "%~2"=="" goto BUILD_DEBUG
+if /i "%~2"=="Debug" goto BUILD_DEBUG
+goto SKIP_DEBUG
+
+:BUILD_DEBUG
+if "%~1"=="" (set BUILD_DIR=%cd%-build-grpc-msvc2019_64-Debug) else (set BUILD_DIR=%~1%\.build-grpc-windows-debug)
 mkdir %BUILD_DIR%
 pushd %BUILD_DIR%
 if not exist CMakeCache.txt (
@@ -19,8 +24,14 @@ if %ERRORLEVEL% NEQ 0 goto FAIL
 cmake --install .
 if %ERRORLEVEL% NEQ 0 goto FAIL
 popd
+:SKIP_DEBUG
 
-set BUILD_DIR=%cd%-build-3rdparty-grpc-msvc2019_64-RelWithDebInfo
+if "%~2"=="" goto BUILD_RELEASE
+if /i "%~2"=="RelWithDebInfo" goto BUILD_RELEASE
+goto SKIP_RELEASE
+
+:BUILD_RELEASE
+if "%~1"=="" (set BUILD_DIR=%cd%-build-grpc-msvc2019_64-RelWithDebInfo) else (set BUILD_DIR=%~1%\.build-grpc-windows-release)
 mkdir %BUILD_DIR%
 pushd %BUILD_DIR%
 if not exist CMakeCache.txt (
@@ -32,6 +43,7 @@ if %ERRORLEVEL% NEQ 0 goto FAIL
 cmake --install .
 if %ERRORLEVEL% NEQ 0 goto FAIL
 popd
+:SKIP_RELEASE
 
 goto SUCCESS
 

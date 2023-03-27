@@ -1,16 +1,20 @@
 @echo off
 setlocal
 
-call build-grpc-msvc2019_64.bat
+call build-grpc-msvc2019_64.bat "%~1" %~2
 if %ERRORLEVEL% NEQ 0 goto FAIL
 
 call env-msvc2019_64.cmd
 set SOURCE_DIR=%cd%
-set CMAKE_INSTALL_PREFIX=%SOURCE_DIR%-msvc2019_64
-
+if "%~1"=="" (set CMAKE_INSTALL_PREFIX=%cd%-windows) else (set CMAKE_INSTALL_PREFIX=%~1\windows)
 if exist %cd%\..\openssl\openssl-win64 set OPENSSL_PARAMS=-DOPENSSL_ROOT_DIR=%cd%\..\openssl\openssl-win64
 
-set BUILD_DIR=%SOURCE_DIR%-build-msvc2019_64-Debug
+if "%~2"=="" goto BUILD_DEBUG
+if /i "%~2"=="Debug" goto BUILD_DEBUG
+goto SKIP_DEBUG
+
+:BUILD_DEBUG
+if "%~1"=="" (set BUILD_DIR=%cd%-build-msvc2019_64-Debug) else (set BUILD_DIR=%~1%\.build-windows-debug)
 mkdir %BUILD_DIR%
 pushd %BUILD_DIR%
 if not exist CMakeCache.txt (
@@ -22,8 +26,14 @@ if %ERRORLEVEL% NEQ 0 goto FAIL
 cmake --install .
 if %ERRORLEVEL% NEQ 0 goto FAIL
 popd
+:SKIP_DEBUG
 
-set BUILD_DIR=%SOURCE_DIR%-build-msvc2019_64-RelWithDebInfo
+if "%~2"=="" goto BUILD_RELEASE
+if /i "%~2"=="RelWithDebInfo" goto BUILD_RELEASE
+goto SKIP_RELEASE
+
+:BUILD_RELEASE
+if "%~1"=="" (set BUILD_DIR=%cd%-build-msvc2019_64-RelWithDebInfo) else (set BUILD_DIR=%~1%\.build-windows-release)
 mkdir %BUILD_DIR%
 pushd %BUILD_DIR%
 if not exist CMakeCache.txt (
@@ -35,13 +45,13 @@ if %ERRORLEVEL% NEQ 0 goto FAIL
 cmake --install .
 if %ERRORLEVEL% NEQ 0 goto FAIL
 popd
+:SKIP_RELEASE
 
 goto SUCCESS
 
 :FAIL
 popd
 echo Build failed
-pause
 goto END
 
 :SUCCESS

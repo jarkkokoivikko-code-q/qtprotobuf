@@ -2,13 +2,13 @@
 setlocal
 
 call env-android.cmd
-set HOST_PATH=%cd%-mingw_64
 set SOURCE_DIR=%cd%\3rdparty\grpc
-set CMAKE_INSTALL_PREFIX=%cd%-android
+if "%~1"=="" (set HOST_PATH=%cd%-windows) else (set HOST_PATH=%~1\windows)
+if "%~1"=="" (set CMAKE_INSTALL_PREFIX=%cd%-android) else (set CMAKE_INSTALL_PREFIX=%~1\android)
 
 if exist %cd%\..\openssl\openssl-win64 set OPENSSL_PARAMS=-DgRPC_SSL_PROVIDER=package -DOPENSSL_ROOT_DIR=%cd%\..\openssl\openssl-android-armv7
 
-set BUILD_DIR=%cd%-3rdparty-grpc-build-android
+if "%~1"=="" (set BUILD_DIR=%cd%-build-grpc-android) else (set BUILD_DIR=%~1%\.build-grpc-android)
 mkdir %BUILD_DIR%
 pushd %BUILD_DIR%
 if not exist CMakeCache.txt (
