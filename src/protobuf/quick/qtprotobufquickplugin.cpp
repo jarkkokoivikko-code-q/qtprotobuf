@@ -27,6 +27,7 @@
 #include "qtprotobuftypes.h"
 #include <private/qqmlmetatype_p.h>
 #include <QDebug>
+#include <QQmlEngine>
 
 template<typename T>
 static QVariant coverter(const QString &str) {
