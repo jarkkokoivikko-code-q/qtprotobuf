@@ -37,19 +37,6 @@ set_target_properties(${TARGET} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_BINARY_DIR}/QtProtobuf"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_BINARY_DIR}/QtProtobuf")
 target_compile_definitions(${TARGET} PRIVATE QT_PROTOBUF_QUICK_LIB)
-
-#Check for QML private headers
-if(NOT DEFINED ${QT_VERSIONED_PREFIX}Qml_PRIVATE_INCLUDE_DIRS OR ${QT_VERSIONED_PREFIX}Qml_PRIVATE_INCLUDE_DIRS STREQUAL "")
-    message(FATAL_ERROR "Qt protobuf project requires Qml private headers defined in system")
-endif()
-
-foreach(QML_PRIVATE_HEADER IN LISTS ${QT_VERSIONED_PREFIX}Qml_PRIVATE_INCLUDE_DIRS)
-    message(STATUS "Check for QtQml private headers dir: ${QML_PRIVATE_HEADER}")
-    if(NOT IS_DIRECTORY ${QML_PRIVATE_HEADER})
-        message(FATAL_ERROR "Qt protobuf project requires Qml private headers defined in system ${QML_PRIVATE_HEADER}")
-    endif()
-endforeach()
-
 target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../ ${${QT_VERSIONED_PREFIX}Qml_PRIVATE_INCLUDE_DIRS})
 
 add_library(${QT_PROTOBUF_NAMESPACE}::${TARGET} ALIAS ${TARGET})
