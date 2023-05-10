@@ -95,7 +95,7 @@ function(qtprotobuf_generate)
     foreach(proto_file IN LISTS arg_PROTO_FILES)
         get_filename_component(proto_file_base_dir "${proto_file}" DIRECTORY)
         list(PREPEND proto_includes "-I\"${proto_file_base_dir}\"")
-        set(pre_parse_args ${extra_pre_parse_options} "-DPROTO_FILE=${proto_file}" "-P ${pre_parse_script}")
+        set(pre_parse_args ${extra_pre_parse_options} "-DPROTO_FILE=${proto_file}" "-P${pre_parse_script}")
         execute_process(COMMAND ${CMAKE_COMMAND}
             ${pre_parse_args}
             OUTPUT_VARIABLE output
