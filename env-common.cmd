@@ -8,6 +8,7 @@ if "%QT_ROOT%"=="" (
 set QT_MSVC=%QT_ROOT%\msvc2019_64
 set QT_MINGW=%QT_ROOT%\mingw_64
 set QT_ANDROID=%QT_ROOT%\android_armv7
+set QT_ANDROID_ARM64=%QT_ROOT%\android_arm64_v8a
 
 REM Clean environent variables which interfere cross compilation
 set ANDROID_HOME=
