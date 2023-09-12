@@ -7,7 +7,7 @@ if %ERRORLEVEL% NEQ 0 goto FAIL
 call build-grpc-android-arm64.bat "%~1"
 if %ERRORLEVEL% NEQ 0 goto FAIL
 
-if exist %cd%\..\openssl\openssl-android-arm64 set OPENSSL_PARAMS=-DOPENSSL_ROOT_DIR=%cd%\..\openssl\openssl-android-arm64
+if exist %cd%\..\openssl\openssl-android-arm64 set OPENSSL_PARAMS=-DOPENSSL_ROOT_DIR=%cd%\..\openssl\openssl-android-arm64 -D_OPENSSL_NAME_POSTFIX=_arm64-v8a
 
 call env-android.cmd
 set SOURCE_DIR=%cd%
