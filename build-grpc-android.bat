@@ -6,7 +6,7 @@ set SOURCE_DIR=%cd%\3rdparty\grpc
 if "%~1"=="" (set HOST_PATH=%cd%-windows) else (set HOST_PATH=%~1\windows)
 if "%~1"=="" (set CMAKE_INSTALL_PREFIX=%cd%-android) else (set CMAKE_INSTALL_PREFIX=%~1\android)
 
-if exist %cd%\..\openssl\openssl-android-armv7 set OPENSSL_PARAMS=-DgRPC_SSL_PROVIDER=package -DOPENSSL_ROOT_DIR=%cd%\..\openssl\openssl-android-armv7
+if exist %cd%\..\openssl\openssl-android-armv7 set OPENSSL_PARAMS=-DgRPC_SSL_PROVIDER=package -DOPENSSL_ROOT_DIR=%cd%\..\openssl\openssl-android-armv7 -D_OPENSSL_NAME_POSTFIX=_armeabi-v7a
 
 if "%~1"=="" (set BUILD_DIR=%cd%-build-grpc-android) else (set BUILD_DIR=%~1%\.build-grpc-android)
 mkdir %BUILD_DIR%
